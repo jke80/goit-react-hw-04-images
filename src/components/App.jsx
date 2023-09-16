@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import css from './App.module.css';
 import { Notify } from 'notiflix/build/notiflix-notify-aio';
 import { ProgressBar } from 'react-loader-spinner';
@@ -10,54 +10,54 @@ import { getImages } from 'Services/pixabayApi';
 export const App = () => {
   const [query, setQuery] = useState('');
   const [page, setPage] = useState(1);
-  const [gallery, setGallery] = useState([]);
+  const galleryRef = useRef([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showButtonLoadMore, setShowButtonLoadMore] = useState(false);
-
-  async function fetchData({ query, page }) {
-    setIsLoading(true);
-    try {
-      const response = await getImages({ query, page });
-      const {
-        data: { hits, totalHits },
-        config: {
-          params: { per_page },
-        },
-      } = response;
-
-      if (totalHits) {
-        const newGallery = [...gallery, ...hits];
-        setGallery(newGallery);
-      } else {
-        Notify.failure(
-          'Sorry, there are no images matching your search query. Please try again.'
-        );
-      }
-
-      if (totalHits > page * per_page) {
-        setShowButtonLoadMore(true);
-      }
-      if (totalHits <= page * per_page) {
-        setShowButtonLoadMore(false);
-        Notify.info("You've reached the end of search results.");
-      }
-    } catch (error) {
-      Notify.failure(`Request failed`, error);
-    } finally {
-      setIsLoading(false);
-    }
-  }
 
   useEffect(() => {
     if (query) {
       fetchData({ query, page });
+    }
+
+    async function fetchData({ query, page }) {
+      setIsLoading(true);
+      try {
+        const response = await getImages({ query, page });
+        const {
+          data: { hits, totalHits },
+          config: {
+            params: { per_page },
+          },
+        } = response;
+
+        if (totalHits) {
+          const newGallery = [...galleryRef.current, ...hits];
+          galleryRef.current = newGallery;
+        } else {
+          Notify.failure(
+            'Sorry, there are no images matching your search query. Please try again.'
+          );
+        }
+
+        if (totalHits > page * per_page) {
+          setShowButtonLoadMore(true);
+        }
+        if (totalHits <= page * per_page) {
+          setShowButtonLoadMore(false);
+          Notify.info("You've reached the end of search results.");
+        }
+      } catch (error) {
+        Notify.failure(`Request failed`, error);
+      } finally {
+        setIsLoading(false);
+      }
     }
   }, [query, page]);
 
   const handleSubmitSearch = query => {
     setQuery(query);
     setPage(1);
-    setGallery([]);
+    galleryRef.current = [];
     setShowButtonLoadMore(false);
   };
 
@@ -69,7 +69,9 @@ export const App = () => {
     <div className={css.app}>
       <Searchbar onSubmit={handleSubmitSearch} />
 
-      {!!gallery.length && <ImageGallery gallery={gallery} />}
+      {!!galleryRef.current.length && (
+        <ImageGallery gallery={galleryRef.current} />
+      )}
 
       {isLoading && (
         <div className={css.progressBarContainer}>
