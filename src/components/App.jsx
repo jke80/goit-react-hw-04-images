@@ -42,7 +42,7 @@ export const App = () => {
         if (totalHits > page * per_page) {
           setShowButtonLoadMore(true);
         }
-        if (totalHits <= page * per_page) {
+        if (totalHits && totalHits <= page * per_page) {
           setShowButtonLoadMore(false);
           Notify.info("You've reached the end of search results.");
         }
