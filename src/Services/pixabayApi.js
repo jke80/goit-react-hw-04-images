@@ -15,10 +15,10 @@ const instance = axios.create({
   },
 });
 
-export const getImages = async ({ page = 1, q = '' }) => {
+export const getImages = async ({ page = 1, query = '' }) => {
   const params = {
     page,
-    q,
+    q: query,
   };
 
   const responce = await instance.get('', { params });

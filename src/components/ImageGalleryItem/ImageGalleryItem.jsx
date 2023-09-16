@@ -1,40 +1,37 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import css from './ImageGalleryItem.module.css';
 import { Modal } from 'components/Modal/Modal';
-export class ImageGalleryItem extends React.Component {
-  state = {
-    showModal: false,
-  };
-  handleCloseModal = () => {
-    this.setState({ showModal: false });
-  };
-  handleClick = () => {
-    this.setState({ showModal: true });
+
+export const ImageGalleryItem = ({ url, tags, largeImageUrl }) => {
+  const [showModal, setShowModal] = useState(false);
+
+  const handleCloseModal = useCallback(() => {
+    setShowModal(false);
+  }, []);
+
+  const handleClick = () => {
+    setShowModal(true);
   };
 
-  render() {
-    const { url, tags, largeImageUrl } = this.props;
-    const { showModal } = this.state;
-    return (
-      <li className={css.galleryItem}>
-        <img
-          className={css.galleryItemImage}
-          onClick={this.handleClick}
-          src={url}
-          alt={tags}
+  return (
+    <li className={css.galleryItem}>
+      <img
+        className={css.galleryItemImage}
+        onClick={handleClick}
+        src={url}
+        alt={tags}
+      />
+      {showModal && (
+        <Modal
+          url={largeImageUrl}
+          tags={tags}
+          onCloseModal={handleCloseModal}
         />
-        {showModal && (
-          <Modal
-            url={largeImageUrl}
-            tags={tags}
-            onCloseModal={this.handleCloseModal}
-          />
-        )}
-      </li>
-    );
-  }
-}
+      )}
+    </li>
+  );
+};
 
 ImageGalleryItem.propTypes = {
   url: PropTypes.string.isRequired,

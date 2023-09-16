@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import css from './App.module.css';
 import { Notify } from 'notiflix/build/notiflix-notify-aio';
 import { ProgressBar } from 'react-loader-spinner';
@@ -7,112 +7,87 @@ import { Button } from './Button/Button';
 import { ImageGallery } from './ImageGallery/ImageGallery';
 import { getImages } from 'Services/pixabayApi';
 
-export class App extends React.Component {
-  state = {
-    query: '',
-    page: 1,
-    gallery: [],
-    isLoading: false,
-    showButtonLoadMore: false,
-  };
+export const App = () => {
+  const [query, setQuery] = useState('');
+  const [page, setPage] = useState(1);
+  const [gallery, setGallery] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [showButtonLoadMore, setShowButtonLoadMore] = useState(false);
 
-  async componentDidUpdate(_, prevState) {
-    const { query, page } = this.state;
+  async function fetchData({ query, page }) {
+    setIsLoading(true);
+    try {
+      const response = await getImages({ query, page });
+      const {
+        data: { hits, totalHits },
+        config: {
+          params: { per_page },
+        },
+      } = response;
 
-    if (prevState.query !== query) {
-      this.setState({
-        isLoading: true,
-      });
-      try {
-        const response = await getImages({ q: query });
-
-        const {
-          data: { hits, totalHits },
-          config: {
-            params: { per_page },
-          },
-        } = response;
-
-        if (totalHits) {
-          this.setState({ gallery: hits });
-        } else {
-          Notify.failure(
-            'Sorry, there are no images matching your search query. Please try again.'
-          );
-        }
-
-        if (totalHits > page * per_page) {
-          this.setState({ showButtonLoadMore: true });
-        }
-      } catch (e) {
-        Notify.failure(`Request failed`);
-      } finally {
-        this.setState({ isLoading: false });
+      if (totalHits) {
+        const newGallery = [...gallery, ...hits];
+        setGallery(newGallery);
+      } else {
+        Notify.failure(
+          'Sorry, there are no images matching your search query. Please try again.'
+        );
       }
-      return;
-    }
 
-    if (prevState.page !== page) {
-      this.setState({ isLoading: true });
-      try {
-        const response = await getImages({ q: query, page });
-        const {
-          data: { totalHits, hits },
-          config: {
-            params: { per_page },
-          },
-        } = response;
-
-        if (totalHits <= page * per_page) {
-          this.setState({ showButtonLoadMore: false });
-          Notify.info("You've reached the end of search results.");
-        }
-
-        this.setState(prevState => ({
-          gallery: [...prevState.gallery, ...hits],
-        }));
-      } catch (e) {
-        Notify.failure(`Request failed`);
-      } finally {
-        this.setState({ isLoading: false });
+      if (totalHits > page * per_page) {
+        setShowButtonLoadMore(true);
       }
+      if (totalHits <= page * per_page) {
+        setShowButtonLoadMore(false);
+        Notify.info("You've reached the end of search results.");
+      }
+    } catch (error) {
+      Notify.failure(`Request failed`, error);
+    } finally {
+      setIsLoading(false);
     }
   }
 
-  handleSubmitSearch = query => {
-    this.setState({ query, page: 1, gallery: [], showButtonLoadMore: false });
+  useEffect(() => {
+    if (query) {
+      fetchData({ query, page });
+    }
+  }, [query, page]);
+
+  const handleSubmitSearch = query => {
+    setQuery(query);
+    setPage(1);
+    setGallery([]);
+    setShowButtonLoadMore(false);
   };
 
-  handleLoadMore = () => {
-    this.setState(prevState => ({ page: prevState.page + 1 }));
+  const handleLoadMore = () => {
+    setPage(prevPage => prevPage + 1);
   };
 
-  render() {
-    const { isLoading, showButtonLoadMore, gallery } = this.state;
-    return (
-      <div className={css.app}>
-        <Searchbar onSubmit={this.handleSubmitSearch} />
+  return (
+    <div className={css.app}>
+      <Searchbar onSubmit={handleSubmitSearch} />
 
-        {!!gallery.length && <ImageGallery gallery={gallery} />}
+      {!!gallery.length && <ImageGallery gallery={gallery} />}
 
-        {isLoading && (
-          <div className={css.progressBarContainer}>
-            <ProgressBar
-              height="80"
-              width="80"
-              ariaLabel="progress-bar-loading"
-              wrapperStyle={{}}
-              wrapperClass="progress-bar-wrapper"
-              borderColor="#3f51b5"
-              barColor="#51E5FF"
-            />
-          </div>
-        )}
+      {isLoading && (
+        <div className={css.progressBarContainer}>
+          <ProgressBar
+            height="80"
+            width="80"
+            ariaLabel="progress-bar-loading"
+            wrapperStyle={{}}
+            wrapperClass="progress-bar-wrapper"
+            borderColor="#3f51b5"
+            barColor="#51E5FF"
+          />
+        </div>
+      )}
 
-        {!isLoading && showButtonLoadMore && (
-          <Button name="Load more" onClick={this.handleLoadMore} />
-        )}
-      </div>
-    );
-  }
-}
+      {!isLoading && showButtonLoadMore && (
+        <Button name="Load more" onClick={handleLoadMore} />
+      )}
+    </div>
+  );
+};
