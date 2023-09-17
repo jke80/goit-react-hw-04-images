@@ -1,52 +1,42 @@
-import React from 'react';
+import React, { useState } from 'react';
 import css from './Searchbar.module.css';
 
-export class Searchbar extends React.Component {
-  state = {
-    inputValue: '',
+export const Searchbar = ({ onSubmit }) => {
+  const [value, setValue] = useState('');
+
+  const handleChange = event => {
+    setValue(event.target.value);
   };
 
-  handleChange = event => {
-    const { value } = event.target;
-    this.setState({ inputValue: value });
-  };
-
-  handleSubmit = event => {
+  const handleSubmit = event => {
     event.preventDefault();
 
-    const { onSubmit } = this.props;
-    const { inputValue } = this.state;
+    if (value) {
+      onSubmit(value);
 
-    if (inputValue) {
-      onSubmit(inputValue);
-
-      this.setState({ inputValue: '' });
+      setValue('');
 
       event.currentTarget.reset();
     }
   };
 
-  render() {
-    const { inputValue } = this.state;
+  return (
+    <header className={css.searchbar}>
+      <form className={css.form} onSubmit={handleSubmit}>
+        <button type="submit" className={css.button}>
+          <span className={css.buttonLabel}>Search</span>
+        </button>
 
-    return (
-      <header className={css.searchbar}>
-        <form className={css.form} onSubmit={this.handleSubmit}>
-          <button type="submit" className={css.button}>
-            <span className={css.buttonLabel}>Search</span>
-          </button>
-
-          <input
-            className={css.input}
-            type="text"
-            autoComplete="off"
-            autoFocus
-            placeholder="Search images and photos"
-            onChange={this.handleChange}
-            value={inputValue}
-          />
-        </form>
-      </header>
-    );
-  }
-}
+        <input
+          className={css.input}
+          type="text"
+          autoComplete="off"
+          autoFocus
+          placeholder="Search images and photos"
+          onChange={handleChange}
+          value={value}
+        />
+      </form>
+    </header>
+  );
+};
